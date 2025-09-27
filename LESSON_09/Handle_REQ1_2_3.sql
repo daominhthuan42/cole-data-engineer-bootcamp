@@ -182,19 +182,20 @@
 --11. Viết procedure thực hiện chức năng phân bổ mã voucher
 --12. Viết procedure thực hiện nghiệp vụ sử dụng voucher
 --13. Viết procedure báo cáo số lượng và giá trị voucher đã phân bổ theo tháng
+
 DROP DATABASE IF EXISTS [02_Evoucher]
 CREATE DATABASE [02_Evoucher]
 ON
 (
 	NAME = 'Evoucher_DB',
-	FILENAME = 'C:\00_DATA\04_DE_CODE\LESSON_09\Evoucher_DB.mdf',
+	FILENAME = 'C:\00_DATA\04_DE_CODE\cole-data-engineer-bootcamp\LESSON_09\Evoucher_DB.mdf',
 	SIZE = 10MB,
 	MAXSIZE = 100MB,
 	FILEGROWTH = 5MB)
 LOG ON
 (
 	NAME = 'Evoucher_DB_LOG',
-	FILENAME = 'C:\00_DATA\04_DE_CODE\LESSON_09\Evoucher_DB.ldf',
+	FILENAME = 'C:\00_DATA\04_DE_CODE\cole-data-engineer-bootcamp\LESSON_09\Evoucher_DB.ldf',
 	SIZE = 5MB,
 	MAXSIZE = 50MB,
 	FILEGROWTH = 5MB
@@ -243,13 +244,13 @@ CREATE TABLE Core.App_User
 	App_Org_Id NVARCHAR(50) NOT NULL,
 	UserName NVARCHAR(50) NOT NULL,
 	FullName NVARCHAR(250) NOT NULL,
-	Email NVARCHAR(250) CONSTRAINT CK_Student_Email CHECK(
+	Email NVARCHAR(250) CONSTRAINT CK_App_User_Email CHECK(
 															Email LIKE '%_@__%.__%'
 															AND Email NOT LIKE '% %'
 															AND LEN(Email) - LEN(REPLACE(Email,'@','')) = 1
 														),
 	EmailConfirmed BIT,
-	PhoneNumber VARCHAR(10) CONSTRAINT CK_Instructor_PhoneNumber CHECK(
+	PhoneNumber VARCHAR(10) CONSTRAINT CK_App_User_PhoneNumber CHECK(
 																		LEN(PhoneNumber) = 10
 																		AND PhoneNumber NOT LIKE '%[^0-9]%'
 																	  ),
@@ -669,6 +670,8 @@ CREATE OR ALTER PROCEDURE Core.usp_App_User_Update
 AS
 BEGIN
     SET NOCOUNT ON;
+	IF @App_User_Id IS NULL
+		THROW 50001, '@App_User_Id cannot be NULL', 1;
 
     UPDATE Core.App_User
     SET
@@ -1179,6 +1182,856 @@ END;
 GO
 
 -------------------------------App_File--------------------------------------------------------------------
+-- Insert
+CREATE OR ALTER PROCEDURE Core.sp_App_File_Insert
+    @App_File_Id NVARCHAR(50),
+    @CreateUser NVARCHAR(50),
+    @CreateDate DATETIME,
+    @UpdateUser NVARCHAR(50) = NULL,
+    @UpdateDate DATETIME = NULL,
+    @IsActive BIT = NULL,
+    @App_Org_Id NVARCHAR(50),
+    @FilePath NVARCHAR(250) = NULL,
+    @FileExt NVARCHAR(50),
+    @FileName NVARCHAR(250),
+    @FileSize INT,
+    @FileContent VARBINARY(MAX) = NULL,
+    @IsContentOnly BIT = NULL,
+    @IsTemp BIT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	DECLARE @ErrMsg NVARCHAR(200), @ErrNo INT;
+	SELECT
+		@ErrNo = CASE
+					WHEN @App_File_Id IS NULL THEN 5001
+					WHEN @CreateUser IS NULL THEN 5002
+					WHEN @CreateDate IS NULL THEN 5003
+					WHEN @App_Org_Id IS NULL THEN 5004
+					WHEN @FileExt IS NULL THEN 5005
+					WHEN @FileName IS NULL THEN 5006
+					WHEN @FileSize IS NULL THEN 5007
+				END,
+		@ErrMsg = CASE
+					WHEN @App_File_Id IS NULL THEN '@App_File_Id cannot be NULL'
+					WHEN @CreateUser IS NULL THEN '@CreateUser cannot be NULL'
+					WHEN @CreateDate IS NULL THEN '@CreateDate cannot be NULL'
+					WHEN @App_Org_Id IS NULL THEN '@App_Org_Id cannot be NULL'
+					WHEN @FileExt IS NULL THEN '@FileExt cannot be NULL'
+					WHEN @FileName IS NULL THEN '@FileName cannot be NULL'
+					WHEN @FileSize IS NULL THEN '@FileSize cannot be NULL'
+				END
+	IF @ErrNo IS NOT NULL
+		THROW @ErrNo, @ErrMsg, 1;
+
+    INSERT INTO Core.App_File (
+        App_File_Id, CreateUser, CreateDate, UpdateUser, UpdateDate, IsActive,
+        App_Org_Id, FilePath, FileExt, FileName, FileSize, FileContent,
+        IsContentOnly, IsTemp
+    )
+    VALUES (
+        @App_File_Id, @CreateUser, @CreateDate, @UpdateUser, @UpdateDate, @IsActive,
+        @App_Org_Id, @FilePath, @FileExt, @FileName, @FileSize, @FileContent,
+        @IsContentOnly, @IsTemp
+    );
+END;
+GO
+
+-- Update
+CREATE OR ALTER PROCEDURE Core.sp_App_File_Update
+    @App_File_Id NVARCHAR(50),
+	@CreateUser NVARCHAR(50) = NULL,
+    @UpdateUser NVARCHAR(50) = NULL,
+    @UpdateDate DATETIME = NULL,
+    @IsActive BIT = NULL,
+    @App_Org_Id NVARCHAR(50) = NULL,
+    @FilePath NVARCHAR(250) = NULL,
+    @FileExt NVARCHAR(50) = NULL,
+    @FileName NVARCHAR(250) = NULL,
+    @FileSize INT = NULL,
+    @FileContent VARBINARY(MAX) = NULL,
+    @IsContentOnly BIT = NULL,
+    @IsTemp BIT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_File_Id IS NULL
+		THROW 50001, '@App_File_Id cannot be NULL', 1;
+
+    UPDATE Core.App_File
+    SET
+        UpdateUser = ISNULL(@UpdateUser, UpdateUser),
+        UpdateDate = ISNULL(@UpdateDate, GETDATE()),
+        IsActive = ISNULL(@IsActive, IsActive),
+        App_Org_Id = ISNULL(@App_Org_Id, App_Org_Id),
+        FilePath = ISNULL(@FilePath, FilePath),
+        FileExt = ISNULL(@FileExt, FileExt),
+        FileName = ISNULL(@FileName, FileName),
+        FileSize = ISNULL(@FileSize, FileSize),
+        FileContent = ISNULL(@FileContent, FileContent),
+        IsContentOnly = ISNULL(@IsContentOnly, IsContentOnly),
+        IsTemp = ISNULL(@IsTemp, IsTemp)
+    WHERE App_File_Id = @App_File_Id;
+END;
+GO
+
+-- DELETE
+CREATE OR ALTER PROCEDURE Core.sp_App_File_Delete
+    @App_File_Id NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_File_Id IS NULL
+		THROW 50001, '@App_File_Id cannot be NULL', 1;
+
+    DELETE FROM Core.App_File
+    WHERE App_File_Id = @App_File_Id;
+END;
+GO
+
+-- Get By Id
+CREATE OR ALTER PROCEDURE Core.sp_App_File_GetById
+    @App_File_Id NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_File_Id IS NULL
+		THROW 50001, '@App_File_Id cannot be NULL', 1;
+
+    SELECT *
+    FROM Core.App_File
+    WHERE App_File_Id = @App_File_Id;
+END;
+GO
+
+-- Get Paging
+CREATE OR ALTER PROCEDURE Core.sp_App_File_GetPaging
+    @PageNumber INT,
+    @PageSize INT,
+    @Search NVARCHAR(250) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @PageNumber IS NULL
+		THROW 50001, '@PageNumber cannot be NULL', 1;
+	IF @PageSize IS NULL
+		THROW 50002, '@PageSize cannot be NULL', 1;
+
+    ;WITH File_CTE AS (
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY CreateDate DESC) AS RowNum,
+            *
+        FROM Core.App_File
+        WHERE (@Search IS NULL
+               OR FileName LIKE '%' + @Search + '%'
+               OR FileExt LIKE '%' + @Search + '%'
+               OR FilePath LIKE '%' + @Search + '%')
+    )
+    SELECT 
+        f.*
+    FROM File_CTE f
+    WHERE RowNum BETWEEN ((@PageNumber-1)*@PageSize + 1)
+                     AND (@PageNumber*@PageSize);
+END;
+GO
+
+-------------------------------App_Dic_Domain--------------------------------------------------------------------
+-- Insert
+CREATE OR ALTER PROCEDURE Core.sp_App_Dic_Domain_Insert
+    @App_Dic_Domain_Id NVARCHAR(50),
+    @CreateUser NVARCHAR(50),
+    @CreateDate DATETIME,
+    @UpdateUser NVARCHAR(50) = NULL,
+    @UpdateDate DATETIME = NULL,
+    @IsActive BIT = NULL,
+    @App_Org_Id NVARCHAR(50),
+    @DomainCode NVARCHAR(50),
+    @ItemCode NVARCHAR(50),
+    @ItemValue NVARCHAR(50),
+    @DisplayOrder INT = NULL,
+    @Description NVARCHAR(1000) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	DECLARE @ErrMsg NVARCHAR(200), @ErrNo INT;
+	SELECT
+		@ErrNo = CASE
+					WHEN @App_Dic_Domain_Id IS NULL THEN 5001
+					WHEN @CreateUser IS NULL THEN 5002
+					WHEN @CreateDate IS NULL THEN 5003
+					WHEN @App_Org_Id IS NULL THEN 5004
+					WHEN @DomainCode IS NULL THEN 5005
+					WHEN @ItemCode IS NULL THEN 5006
+					WHEN @ItemValue IS NULL THEN 5007
+				END,
+		@ErrMsg = CASE
+					WHEN @App_Dic_Domain_Id IS NULL THEN '@App_Dic_Domain_Id cannot be NULL'
+					WHEN @CreateUser IS NULL THEN '@CreateUser cannot be NULL'
+					WHEN @CreateDate IS NULL THEN '@CreateDate cannot be NULL'
+					WHEN @App_Org_Id IS NULL THEN '@App_Org_Id cannot be NULL'
+					WHEN @DomainCode IS NULL THEN '@DomainCode cannot be NULL'
+					WHEN @ItemCode IS NULL THEN '@ItemCode cannot be NULL'
+					WHEN @ItemValue IS NULL THEN '@ItemValue cannot be NULL'
+				END
+	IF @ErrNo IS NOT NULL
+		THROW @ErrNo, @ErrMsg, 1;
+
+    INSERT INTO Core.App_Dic_Domain (
+        App_Dic_Domain_Id, CreateUser, CreateDate, UpdateUser, UpdateDate, IsActive,
+        App_Org_Id, DomainCode, ItemCode, ItemValue, DisplayOrder, Description
+    )
+    VALUES (
+        @App_Dic_Domain_Id, @CreateUser, @CreateDate, @UpdateUser, @UpdateDate, @IsActive,
+        @App_Org_Id, @DomainCode, @ItemCode, @ItemValue, @DisplayOrder, @Description
+    );
+END;
+GO
+
+-- Update
+CREATE OR ALTER PROCEDURE Core.sp_App_Dic_Domain_Update
+    @App_Dic_Domain_Id NVARCHAR(50),
+    @UpdateUser NVARCHAR(50) = NULL,
+    @UpdateDate DATETIME = NULL,
+    @IsActive BIT = NULL,
+    @App_Org_Id NVARCHAR(50) = NULL,
+    @DomainCode NVARCHAR(50) = NULL,
+    @ItemCode NVARCHAR(50) = NULL,
+    @ItemValue NVARCHAR(50) = NULL,
+    @DisplayOrder INT = NULL,
+    @Description NVARCHAR(1000) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_Dic_Domain_Id IS NULL
+		THROW 50001, '@App_Dic_Domain_Id cannot be NULL', 1;
+
+    UPDATE Core.App_Dic_Domain
+    SET
+        UpdateUser = ISNULL(@UpdateUser, UpdateUser),
+        UpdateDate = ISNULL(@UpdateDate, GETDATE()),
+        IsActive = ISNULL(@IsActive, IsActive),
+        App_Org_Id = ISNULL(@App_Org_Id, App_Org_Id),
+        DomainCode = ISNULL(@DomainCode, DomainCode),
+        ItemCode = ISNULL(@ItemCode, ItemCode),
+        ItemValue = ISNULL(@ItemValue, ItemValue),
+        DisplayOrder = ISNULL(@DisplayOrder, DisplayOrder),
+        Description = ISNULL(@Description, Description)
+    WHERE App_Dic_Domain_Id = @App_Dic_Domain_Id;
+END;
+GO
+
+-- DELETE
+CREATE OR ALTER PROCEDURE Core.sp_App_Dic_Domain_Delete
+    @App_Dic_Domain_Id NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_Dic_Domain_Id IS NULL
+		THROW 50001, '@App_Dic_Domain_Id cannot be NULL', 1;
+
+    DELETE FROM Core.App_Dic_Domain
+    WHERE App_Dic_Domain_Id = @App_Dic_Domain_Id;
+END;
+GO
+
+-- Get By Id
+CREATE OR ALTER PROCEDURE Core.sp_App_Dic_Domain_GetById
+    @App_Dic_Domain_Id NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_Dic_Domain_Id IS NULL
+		THROW 50001, '@App_Dic_Domain_Id cannot be NULL', 1;
+
+    SELECT *
+    FROM Core.App_Dic_Domain
+    WHERE App_Dic_Domain_Id = @App_Dic_Domain_Id;
+END;
+GO
+
+-- Get Paging
+CREATE OR ALTER PROCEDURE Core.sp_App_Dic_Domain_GetPaging
+    @PageNumber INT,
+    @PageSize INT,
+    @Search NVARCHAR(250) = NULL,
+    @Domain NVARCHAR(50) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @PageNumber IS NULL
+		THROW 50001, '@PageNumber cannot be NULL', 1;
+	IF @PageSize IS NULL
+		THROW 50002, '@PageSize cannot be NULL', 1;
+
+    ;WITH Dic_CTE AS (
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY DisplayOrder ASC, CreateDate DESC) AS RowNum,
+            *
+        FROM Core.App_Dic_Domain
+        WHERE (@Search IS NULL
+               OR ItemCode LIKE '%' + @Search + '%'
+               OR ItemValue LIKE '%' + @Search + '%'
+               OR Description LIKE '%' + @Search + '%')
+          AND (@Domain IS NULL OR DomainCode = @Domain)
+    )
+    SELECT 
+        d.*
+    FROM Dic_CTE d
+    WHERE RowNum BETWEEN ((@PageNumber-1)*@PageSize + 1)
+                     AND (@PageNumber*@PageSize);
+END;
+GO
+
+-------------------------------App_Sequence----------------------------------------------------------------------
+-- Insert
+CREATE OR ALTER PROCEDURE Core.sp_App_Sequence_Insert
+    @App_Sequence_Id NVARCHAR(50),
+    @CreateUser NVARCHAR(50),
+    @CreateDate DATETIME = NULL,
+    @UpdateUser NVARCHAR(50) = NULL,
+    @UpdateDate DATETIME = NULL,
+    @IsActive BIT = 1,
+    @App_Org_Id NVARCHAR(50) = NULL,
+    @Code NVARCHAR(50),
+    @Type NVARCHAR(50) = NULL,
+    @Prefix NVARCHAR(50) = NULL,
+    @Length INT = NULL,
+    @SeqValue INT = 0,
+    @Description NVARCHAR(1000) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	DECLARE @ErrMsg NVARCHAR(200), @ErrNo INT;
+	SELECT
+		@ErrNo = CASE
+					WHEN @App_Sequence_Id IS NULL THEN 5001
+					WHEN @CreateUser IS NULL THEN 5002
+					WHEN @CreateDate IS NULL THEN 5003
+					WHEN @App_Org_Id IS NULL THEN 5004
+					WHEN @Code IS NULL THEN 5005
+				END,
+		@ErrMsg = CASE
+					WHEN @App_Sequence_Id IS NULL THEN '@App_Sequence_Id cannot be NULL'
+					WHEN @CreateUser IS NULL THEN '@CreateUser cannot be NULL'
+					WHEN @CreateDate IS NULL THEN '@CreateDate cannot be NULL'
+					WHEN @App_Org_Id IS NULL THEN '@App_Org_Id cannot be NULL'
+					WHEN @Code IS NULL THEN '@Code cannot be NULL'
+				END
+	IF @ErrNo IS NOT NULL
+		THROW @ErrNo, @ErrMsg, 1;
+
+    INSERT INTO Core.App_Sequence (
+        App_Sequence_Id, CreateUser, CreateDate, UpdateUser, UpdateDate, IsActive,
+        App_Org_Id, Code, Type, Prefix, Length, SeqValue, Description
+    )
+    VALUES (
+        @App_Sequence_Id, @CreateUser, @CreateDate, @UpdateUser, @UpdateDate, @IsActive,
+        @App_Org_Id, @Code, @Type, @Prefix, @Length, @SeqValue, @Description
+    );
+END;
+GO
+
+-- Update
+CREATE OR ALTER PROCEDURE Core.sp_App_Sequence_Update
+    @App_Sequence_Id NVARCHAR(50),
+    @UpdateUser NVARCHAR(50) = NULL,
+    @UpdateDate DATETIME = NULL,
+    @IsActive BIT = NULL,
+    @App_Org_Id NVARCHAR(50) = NULL,
+    @Code NVARCHAR(50) = NULL,
+    @Type NVARCHAR(50) = NULL,
+    @Prefix NVARCHAR(50) = NULL,
+    @Length INT = NULL,
+    @SeqValue INT = NULL,
+    @Description NVARCHAR(1000) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_Sequence_Id IS NULL
+		THROW 50001, '@App_Sequence_Id cannot be NULL', 1;
+
+    UPDATE Core.App_Sequence
+    SET
+        UpdateUser = ISNULL(@UpdateUser, UpdateUser),
+        UpdateDate = ISNULL(@UpdateDate, GETDATE()),
+        IsActive = ISNULL(@IsActive, IsActive),
+        App_Org_Id = ISNULL(@App_Org_Id, App_Org_Id),
+        Code = ISNULL(@Code, Code),
+        Type = ISNULL(@Type, Type),
+        Prefix = ISNULL(@Prefix, Prefix),
+        Length = ISNULL(@Length, Length),
+        SeqValue = ISNULL(@SeqValue, SeqValue),
+        Description = ISNULL(@Description, Description)
+    WHERE App_Sequence_Id = @App_Sequence_Id;
+END;
+GO
+
+-- DELETE
+CREATE OR ALTER PROCEDURE Core.sp_App_Sequence_Delete
+    @App_Sequence_Id NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_Sequence_Id IS NULL
+		THROW 50001, '@App_Sequence_Id cannot be NULL', 1;
+
+    DELETE FROM Core.App_Sequence
+    WHERE App_Sequence_Id = @App_Sequence_Id;
+END;
+GO
+
+-- Get By Id
+CREATE OR ALTER PROCEDURE Core.sp_App_Sequence_GetById
+    @App_Sequence_Id NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_Sequence_Id IS NULL
+		THROW 50001, '@App_Sequence_Id cannot be NULL', 1;
+
+    SELECT *
+    FROM Core.App_Sequence
+    WHERE App_Sequence_Id = @App_Sequence_Id;
+END;
+GO
+
+-- Get Paging
+CREATE OR ALTER PROCEDURE Core.sp_App_Sequence_GetPaging
+    @PageNumber INT,
+    @PageSize INT,
+    @Search NVARCHAR(250) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @PageNumber IS NULL
+		THROW 50001, '@PageNumber cannot be NULL', 1;
+	IF @PageSize IS NULL
+		THROW 50002, '@PageSize cannot be NULL', 1;
+
+    ;WITH Seq_CTE AS (
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY CreateDate DESC) AS RowNum,
+            *
+        FROM Core.App_Sequence
+        WHERE (@Search IS NULL
+               OR Code LIKE '%' + @Search + '%'
+               OR Prefix LIKE '%' + @Search + '%'
+               OR Description LIKE '%' + @Search + '%')
+    )
+    SELECT 
+        s.*
+    FROM Seq_CTE s
+    WHERE RowNum BETWEEN ((@PageNumber-1)*@PageSize + 1)
+                     AND (@PageNumber*@PageSize);
+END;
+GO
+
+-------------------------------App_Log------------------------------------------------------------------------------
+-- Insert
+CREATE OR ALTER PROCEDURE Core.sp_App_Log_Insert
+    @App_Log_Id NVARCHAR(50),
+    @CreateUser NVARCHAR(50),
+    @CreateDate DATETIME,
+    @App_Org_Id NVARCHAR(50),
+    @TableName NVARCHAR(50) = NULL,
+    @RowId NVARCHAR(50) = NULL,
+    @Action NVARCHAR(50) = NULL,
+    @OldValue NVARCHAR(1000) = NULL,
+    @NewValue NVARCHAR(1000) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	DECLARE @ErrMsg NVARCHAR(200), @ErrNo INT;
+	SELECT
+		@ErrNo = CASE
+					WHEN @App_Log_Id IS NULL THEN 5001
+					WHEN @CreateUser IS NULL THEN 5002
+					WHEN @CreateDate IS NULL THEN 5003
+					WHEN @App_Org_Id IS NULL THEN 5004
+				END,
+		@ErrMsg = CASE
+					WHEN @App_Log_Id IS NULL THEN '@App_Log_Id cannot be NULL'
+					WHEN @CreateUser IS NULL THEN '@CreateUser cannot be NULL'
+					WHEN @CreateDate IS NULL THEN '@CreateDate cannot be NULL'
+					WHEN @App_Org_Id IS NULL THEN '@App_Org_Id cannot be NULL'
+				END
+	IF @ErrNo IS NOT NULL
+		THROW @ErrNo, @ErrMsg, 1;
+
+    INSERT INTO Core.App_Log (
+        App_Log_Id, CreateUser, CreateDate, App_Org_Id,
+        TableName, RowId, Action, OldValue, NewValue
+    )
+    VALUES (
+        @App_Log_Id, @CreateUser, @CreateDate, @App_Org_Id,
+        @TableName, @RowId, @Action, @OldValue, @NewValue
+    );
+END;
+GO
+
+-- Update
+CREATE OR ALTER PROCEDURE Core.sp_App_Log_Update
+    @App_Log_Id NVARCHAR(50),
+    @App_Org_Id NVARCHAR(50) = NULL,
+    @TableName NVARCHAR(50) = NULL,
+    @RowId NVARCHAR(50) = NULL,
+    @Action NVARCHAR(50) = NULL,
+    @OldValue NVARCHAR(1000) = NULL,
+    @NewValue NVARCHAR(1000) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_Log_Id IS NULL
+		THROW 50001, '@App_Log_Id cannot be NULL', 1;
+
+    UPDATE Core.App_Log
+    SET
+        App_Org_Id = ISNULL(@App_Org_Id, App_Org_Id),
+        TableName = ISNULL(@TableName, TableName),
+        RowId = ISNULL(@RowId, RowId),
+        Action = ISNULL(@Action, Action),
+        OldValue = ISNULL(@OldValue, OldValue),
+        NewValue = ISNULL(@NewValue, NewValue)
+    WHERE App_Log_Id = @App_Log_Id;
+END;
+GO
+
+-- DELETE
+CREATE OR ALTER PROCEDURE Core.sp_App_Log_Delete
+    @App_Log_Id NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_Log_Id IS NULL
+		THROW 50001, '@App_Log_Id cannot be NULL', 1;
+
+    DELETE FROM Core.App_Log
+    WHERE App_Log_Id = @App_Log_Id;
+END;
+GO
+
+-- Get By Id
+CREATE OR ALTER PROCEDURE Core.sp_App_Log_GetById
+    @App_Log_Id NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_Log_Id IS NULL
+		THROW 50001, '@App_Log_Id cannot be NULL', 1;
+
+    SELECT *
+    FROM Core.App_Log
+    WHERE App_Log_Id = @App_Log_Id;
+END;
+GO
+
+-- Get Paging
+CREATE OR ALTER PROCEDURE Core.sp_App_Log_GetPaging
+    @PageNumber INT,
+    @PageSize INT,
+    @Search NVARCHAR(250) = NULL,
+    @Table NVARCHAR(50) = NULL,
+    @Action NVARCHAR(50) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @PageNumber IS NULL
+		THROW 50001, '@PageNumber cannot be NULL', 1;
+	IF @PageSize IS NULL
+		THROW 50002, '@PageSize cannot be NULL', 1;
+
+    ;WITH Log_CTE AS (
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY CreateDate DESC) AS RowNum,
+            *
+        FROM Core.App_Log
+        WHERE (@Search IS NULL
+               OR OldValue LIKE '%' + @Search + '%'
+               OR NewValue LIKE '%' + @Search + '%')
+          AND (@Table IS NULL OR TableName = @Table)
+          AND (@Action IS NULL OR Action = @Action)
+    )
+    SELECT 
+        l.*
+    FROM Log_CTE l
+    WHERE RowNum BETWEEN ((@PageNumber-1)*@PageSize + 1)
+                     AND (@PageNumber*@PageSize);
+END;
+GO
+
+-------------------------------App_Role_Menu_Ref------------------------------------------------------------------------------
+-- Insert
+CREATE OR ALTER PROCEDURE Ref.sp_App_Role_Menu_Ref_Insert
+    @App_Role_Menu_Ref_Id NVARCHAR(50),
+    @CreateUser NVARCHAR(50),
+    @CreateDate DATETIME,
+    @App_Role_Id NVARCHAR(50),
+    @App_Menu_Id NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	DECLARE @ErrMsg NVARCHAR(200), @ErrNo INT;
+	SELECT
+		@ErrNo = CASE
+					WHEN @App_Role_Menu_Ref_Id IS NULL THEN 5001
+					WHEN @CreateUser IS NULL THEN 5002
+					WHEN @CreateDate IS NULL THEN 5003
+					WHEN @App_Role_Id IS NULL THEN 5004
+					WHEN @App_Menu_Id IS NULL THEN 5005
+				END,
+		@ErrMsg = CASE
+					WHEN @App_Role_Menu_Ref_Id IS NULL THEN '@App_Role_Menu_Ref_Id cannot be NULL'
+					WHEN @CreateUser IS NULL THEN '@CreateUser cannot be NULL'
+					WHEN @CreateDate IS NULL THEN '@CreateDate cannot be NULL'
+					WHEN @App_Role_Id IS NULL THEN '@App_Role_Id cannot be NULL'
+					WHEN @App_Menu_Id IS NULL THEN '@App_Menu_Id cannot be NULL'
+				END
+	IF @ErrNo IS NOT NULL
+		THROW @ErrNo, @ErrMsg, 1;
+
+    INSERT INTO Ref.App_Role_Menu_Ref (
+        App_Role_Menu_Ref_Id, CreateUser, CreateDate, App_Role_Id, App_Menu_Id
+    )
+    VALUES (
+        @App_Role_Menu_Ref_Id, @CreateUser, @CreateDate, @App_Role_Id, @App_Menu_Id
+    );
+END;
+GO
+
+-- DELETE
+CREATE OR ALTER PROCEDURE Ref.sp_App_Role_Menu_Ref_Delete
+    @App_Role_Menu_Ref_Id NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_Role_Menu_Ref_Id IS NULL
+		THROW 50001, '@App_Role_Menu_Ref_Id cannot be NULL', 1;
+
+    DELETE FROM Ref.App_Role_Menu_Ref
+    WHERE App_Role_Menu_Ref_Id = @App_Role_Menu_Ref_Id;
+END;
+GO
+
+-- Get Paging
+CREATE OR ALTER PROCEDURE Ref.sp_App_Role_Menu_Ref_GetPaging
+    @PageNumber INT,
+    @PageSize INT,
+    @RoleId NVARCHAR(50) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @PageNumber IS NULL
+		THROW 50001, '@PageNumber cannot be NULL', 1;
+	IF @PageSize IS NULL
+		THROW 50002, '@PageSize cannot be NULL', 1;
+
+    ;WITH RM_CTE AS (
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY CreateDate DESC) AS RowNum,
+            *
+        FROM Ref.App_Role_Menu_Ref
+        WHERE (@RoleId IS NULL OR App_Role_Id = @RoleId)
+    )
+    SELECT 
+        rm.*
+    FROM RM_CTE rm
+    WHERE RowNum BETWEEN ((@PageNumber-1)*@PageSize + 1)
+                     AND (@PageNumber*@PageSize);
+END;
+GO
+
+-------------------------------App_User_Org_Ref------------------------------------------------------------------------------
+-- Insert
+CREATE OR ALTER PROCEDURE Ref.sp_App_User_Org_Ref_Insert
+    @App_User_Org_Ref_Id NVARCHAR(50),
+    @CreateUser NVARCHAR(50),
+    @CreateDate DATETIME = NULL,
+    @App_User_Id NVARCHAR(50),
+    @App_Org_Id NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	DECLARE @ErrMsg NVARCHAR(200), @ErrNo INT;
+	SELECT
+		@ErrNo = CASE
+					WHEN @App_User_Org_Ref_Id IS NULL THEN 5001
+					WHEN @CreateUser IS NULL THEN 5002
+					WHEN @CreateDate IS NULL THEN 5003
+					WHEN @App_User_Id IS NULL THEN 5004
+					WHEN @App_Org_Id IS NULL THEN 5005
+				END,
+		@ErrMsg = CASE
+					WHEN @App_User_Org_Ref_Id IS NULL THEN '@App_User_Org_Ref_Id cannot be NULL'
+					WHEN @CreateUser IS NULL THEN '@CreateUser cannot be NULL'
+					WHEN @CreateDate IS NULL THEN '@CreateDate cannot be NULL'
+					WHEN @App_User_Id IS NULL THEN '@App_User_Id cannot be NULL'
+					WHEN @App_Org_Id IS NULL THEN '@App_Org_Id cannot be NULL'
+				END
+	IF @ErrNo IS NOT NULL
+		THROW @ErrNo, @ErrMsg, 1;
+
+    INSERT INTO Ref.App_User_Org_Ref (
+        App_User_Org_Ref_Id, CreateUser, CreateDate, App_User_Id, App_Org_Id
+    )
+    VALUES (
+        @App_User_Org_Ref_Id, @CreateUser, @CreateDate, @App_User_Id, @App_Org_Id
+    );
+END;
+GO
+
+-- DELETE
+CREATE OR ALTER PROCEDURE Ref.sp_App_User_Org_Ref_Delete
+    @App_User_Org_Ref_Id NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_User_Org_Ref_Id IS NULL
+		THROW 50001, '@App_Role_Menu_Ref_Id cannot be NULL', 1;
+
+    DELETE FROM Ref.App_User_Org_Ref
+    WHERE App_User_Org_Ref_Id = @App_User_Org_Ref_Id;
+END;
+GO
+
+-- Get Paging
+CREATE OR ALTER PROCEDURE Ref.sp_App_User_Org_Ref_GetPaging
+    @PageNumber INT,
+    @PageSize INT,
+    @UserId NVARCHAR(50) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @PageNumber IS NULL
+		THROW 50001, '@PageNumber cannot be NULL', 1;
+	IF @PageSize IS NULL
+		THROW 50002, '@PageSize cannot be NULL', 1;
+
+    ;WITH UO_CTE AS (
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY CreateDate DESC) AS RowNum,
+            *
+        FROM Ref.App_User_Org_Ref
+        WHERE (@UserId IS NULL OR App_User_Id = @UserId)
+    )
+    SELECT 
+        uo.*
+    FROM UO_CTE uo
+    WHERE RowNum BETWEEN ((@PageNumber-1)*@PageSize + 1)
+                     AND (@PageNumber*@PageSize);
+END;
+GO
+
+-------------------------------App_User_Role_Ref------------------------------------------------------------------------------
+-- Insert
+CREATE OR ALTER PROCEDURE Ref.sp_App_User_Role_Ref_Insert
+    @App_User_Role_Ref_Id NVARCHAR(50),
+    @CreateUser NVARCHAR(50),
+    @CreateDate DATETIME = NULL,
+    @App_User_Id NVARCHAR(50),
+    @App_Role_Id NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	DECLARE @ErrMsg NVARCHAR(200), @ErrNo INT;
+	SELECT
+		@ErrNo = CASE
+					WHEN @App_User_Role_Ref_Id IS NULL THEN 5001
+					WHEN @CreateUser IS NULL THEN 5002
+					WHEN @CreateDate IS NULL THEN 5003
+					WHEN @App_User_Id IS NULL THEN 5004
+					WHEN @App_Role_Id IS NULL THEN 5005
+				END,
+		@ErrMsg = CASE
+					WHEN @App_User_Role_Ref_Id IS NULL THEN '@App_User_Role_Ref_Id cannot be NULL'
+					WHEN @CreateUser IS NULL THEN '@CreateUser cannot be NULL'
+					WHEN @CreateDate IS NULL THEN '@CreateDate cannot be NULL'
+					WHEN @App_User_Id IS NULL THEN '@App_User_Id cannot be NULL'
+					WHEN @App_Role_Id IS NULL THEN '@App_Role_Id cannot be NULL'
+				END
+	IF @ErrNo IS NOT NULL
+		THROW @ErrNo, @ErrMsg, 1;
+
+    INSERT INTO Ref.App_User_Role_Ref (
+        App_User_Role_Ref_Id, CreateUser, CreateDate, App_User_Id, App_Role_Id
+    )
+    VALUES (
+        @App_User_Role_Ref_Id, @CreateUser, @CreateDate, @App_User_Id, @App_Role_Id
+    );
+END;
+GO
+
+-- DELETE
+CREATE OR ALTER PROCEDURE Ref.sp_App_User_Role_Ref_Delete
+    @App_User_Role_Ref_Id NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+	-- Validate Input
+	IF @App_User_Role_Ref_Id IS NULL
+		THROW 50001, '@App_Role_Menu_Ref_Id cannot be NULL', 1;
+
+    DELETE FROM Ref.App_User_Role_Ref
+    WHERE App_User_Role_Ref_Id = @App_User_Role_Ref_Id;
+END;
+GO
+
+-- Get Paging
+CREATE OR ALTER PROCEDURE Ref.sp_App_User_Role_Ref_GetPaging
+    @PageNumber INT,
+    @PageSize INT,
+    @UserId NVARCHAR(50) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+	-- Validate Input
+	IF @PageNumber IS NULL
+		THROW 50001, '@PageNumber cannot be NULL', 1;
+	IF @PageSize IS NULL
+		THROW 50002, '@PageSize cannot be NULL', 1;
+
+    ;WITH UR_CTE AS (
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY CreateDate DESC) AS RowNum,
+            *
+        FROM Ref.App_User_Role_Ref
+        WHERE (@UserId IS NULL OR App_User_Id = @UserId)
+    )
+    SELECT 
+        ur.*
+    FROM UR_CTE ur
+    WHERE RowNum BETWEEN ((@PageNumber-1)*@PageSize + 1)
+                     AND (@PageNumber*@PageSize);
+END;
+GO
+
 
 --DROP PROCEDURE IF EXISTS [Core].[uspDeleteAppOrg]
 --DROP PROCEDURE IF EXISTS [Core].[uspGetPaggingAppOrg]

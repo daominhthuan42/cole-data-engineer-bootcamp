@@ -1,0 +1,184 @@
+--**Yêu cầu chi tiết Project**
+
+--1. Tạo database cho project
+--2. Thiết kế, tạo các bảng chức năng chung
+
+--* **App_User**
+
+--  * App_User_Id – nvarchar(50) – primary key
+--  * CreateUser – nvarchar(50) – not null
+--  * CreateDate – datetime – not null
+--  * UpdateUser – nvarchar(50)
+--  * UpdateDate – datetime
+--  * IsActive – bit
+--  * App_Org_Id – nvarchar(50) – not null – FK: App_Org
+--  * UserName – nvarchar(50) – not null – unique
+--  * FullName – nvarchar(250) – not null
+--  * Email – nvarchar(250)
+--  * EmailConfirmed – bit
+--  * PhoneNumber – nvarchar(50)
+--  * PhoneNumberConfirmed – bit
+--  * AccessFailedCount – int
+--  * IsAdmin – bit
+--  * PasswordHash – nvarchar(250)
+--  * LastLogin – datetime
+
+--**App_Menu**
+
+--* App_Menu_Id – nvarchar(50) – primary key
+--* CreateUser – nvarchar(50) – not null
+--* CreateDate – datetime – not null
+--* UpdateUser – nvarchar(50)
+--* UpdateDate – datetime
+--* IsActive – bit
+--* App_Org_Id – nvarchar(50) – not null – FK: App_Org
+--* Name – nvarchar(250) – not null
+--* TranslateKey – nvarchar(250)
+--* Uri – nvarchar(250)
+--* Icon – nvarchar(50)
+--* DisplayOrder – int
+--* ParentId – nvarchar(50)
+
+--**App_Role**
+
+--* App_Role_Id – nvarchar(50) – primary key
+--* CreateUser – nvarchar(50) – not null
+--* CreateDate – datetime – not null
+--* UpdateUser – nvarchar(50)
+--* UpdateDate – datetime
+--* IsActive – bit
+--* App_Org_Id – nvarchar(50) – not null – FK: App_Org
+--* Code – nvarchar(50) – not null
+--* Name – nvarchar(250) – not null
+--* Description – nvarchar(1000)
+
+--**App_Org**
+
+--* App_Org_Id – nvarchar(50) – primary key
+--* CreateUser – nvarchar(50) – not null
+--* CreateDate – datetime – not null
+--* UpdateUser – nvarchar(50)
+--* UpdateDate – datetime
+--* IsActive – bit
+--* Code – nvarchar(50) – not null – unique
+--* Name – nvarchar(250)
+--* NameEn – nvarchar(250)
+--* Type – nvarchar(50) – FK: App_Dic_Domain.App_Org.Type
+--* Address – nvarchar(1000)
+--* Description – nvarchar(1000)
+--* ParentId – nvarchar(50)
+--* DisplayOrder – int
+
+--**App_Setting**
+
+--* App_Setting_Id – nvarchar(50) – primary key
+--* CreateUser – nvarchar(50) – not null
+--* CreateDate – datetime – not null
+--* UpdateUser – nvarchar(50)
+--* UpdateDate – datetime
+--* IsActive – bit
+--* App_Org_Id – nvarchar(50) – not null – FK: App_Org
+--* Code – nvarchar(50) – not null
+--* Value – nvarchar(50) – not null
+--* Description – nvarchar(1000)
+
+--**App_File**
+
+--* App_File_Id – nvarchar(50) – primary key
+--* CreateUser – nvarchar(50) – not null
+--* CreateDate – datetime – not null
+--* UpdateUser – nvarchar(50)
+--* UpdateDate – datetime
+--* IsActive – bit
+--* App_Org_Id – nvarchar(50) – not null – FK: App_Org
+--* FilePath – nvarchar(550)
+--* FileExt – nvarchar(50) – not null
+--* FileName – nvarchar(250) – not null
+--* FileSize – int – not null
+--* FileContent – varbinary(max)
+--* IsContentOnly – bit
+--* IsTemp – bit
+
+--**App_Dic_Domain**
+
+--* App_Dic_Domain_Id – nvarchar(50) – primary key
+--* CreateUser – nvarchar(50) – not null
+--* CreateDate – datetime – not null
+--* UpdateUser – nvarchar(50)
+--* UpdateDate – datetime
+--* IsActive – bit
+--* App_Org_Id – nvarchar(50) – not null – FK: App_Org
+--* DomainCode – nvarchar(50) – not null
+--* ItemCode – nvarchar(50) – not null
+--* ItemValue – nvarchar(50) – not null
+--* DisplayOrder – int
+--* Description – nvarchar(1000)
+
+--**App_Sequence**
+
+--* App_Sequence_Id – nvarchar(50) – primary key
+--* CreateUser – nvarchar(50) – not null
+--* CreateDate – datetime – not null
+--* UpdateUser – nvarchar(50)
+--* UpdateDate – datetime
+--* IsActive – bit
+--* App_Org_Id – nvarchar(50) – not null – FK: App_Org
+--* Code – nvarchar(50) – not null
+--* Type – nvarchar(50)
+--* Prefix – nvarchar(50)
+--* Length – int
+--* SeqValue – int
+--* Description – nvarchar(1000)
+
+--**App_Log**
+
+--* App_Log_Id – nvarchar(50) – primary key
+--* CreateUser – nvarchar(50) – not null
+--* CreateDate – datetime – not null
+--* App_Org_Id – nvarchar(50) – not null – FK: App_Org
+--* TableName – nvarchar(50)
+--* RowId – nvarchar(50)
+--* Action – nvarchar(50)
+--* OldValue – nvarchar(1000)
+--* NewValue – nvarchar(1000)
+
+--**App_Role_Menu_Ref**
+
+--* App_Role_Menu_Ref_Id – nvarchar(50) – primary key
+--* CreatedDate – datetime – not null
+--* CreatedUser – nvarchar(50) – not null
+--* App_Role_Id – nvarchar(250) – not null
+--* App_Menu_Id – nvarchar(250) – not null
+
+--**App_User_Org_Ref**
+
+--* App_User_Org_Ref_Id – nvarchar(50) – primary key
+--* CreatedDate – datetime – not null
+--* CreatedUser – nvarchar(50) – not null
+--* App_User_Id – nvarchar(250) – not null
+--* App_Org_Id – nvarchar(250) – not null
+
+--**App_User_Role_Ref**
+
+--* App_User_Role_Ref_Id – nvarchar(50) – primary key
+--* CreatedDate – datetime – not null
+--* CreatedUser – nvarchar(50) – not null
+--* App_User_Id – nvarchar(250) – not null
+--* App_Role_Id – nvarchar(250) – not null
+
+--3. Với mỗi bảng chức năng chung tạo các store nghiệp vụ thêm sửa xóa, get by id, get paging
+--4. Viết một số store nghiệp vụ riêng
+--   * Lấy dữ liệu menu tương ứng với App_User
+--5. Thiết kế bảng dữ liệu nghiệp vụ EVoucher
+--   * Nhân viên
+--   * Danh mục loại voucher
+--   * Danh sách voucher
+--   * Quản lý ngân sách voucher
+--6. Với mỗi bảng chức năng nghiệp vụ EVoucher tạo các store nghiệp vụ thêm sửa xóa, get by id, get paging
+--7. Import dữ liệu nhân viên
+--8. Import dữ liệu ngân sách
+--9. Import dữ liệu voucher
+--10. Viết procedure thực hiện chức năng phân bổ voucher
+--11. Viết procedure thực hiện chức năng phân bổ mã voucher
+--12. Viết procedure thực hiện nghiệp vụ sử dụng voucher
+--13. Viết procedure báo cáo số lượng và giá trị voucher đã phân bổ theo tháng
