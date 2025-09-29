@@ -9,9 +9,6 @@
 USE [02_Evoucher]
 GO
 
-GRANT CONTROL ON SCHEMA::Biz TO [LAPTOP-3B8PDM8R\Dao Minh Thuan];
-GO
-
 DROP TABLE IF EXISTS Biz.VoucherAllocation;
 CREATE TABLE Biz.VoucherAllocation
 (

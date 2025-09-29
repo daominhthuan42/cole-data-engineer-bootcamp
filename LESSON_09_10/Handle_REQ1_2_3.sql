@@ -188,14 +188,14 @@ CREATE DATABASE [02_Evoucher]
 ON
 (
 	NAME = 'Evoucher_DB',
-	FILENAME = 'C:\00_DATA\04_DE_CODE\cole-data-engineer-bootcamp\LESSON_09\Evoucher_DB.mdf',
+	FILENAME = 'D:\02_DATA\01_cole-data-engineer-bootcamp\LESSON_09\Evoucher_DB.mdf',
 	SIZE = 10MB,
 	MAXSIZE = 100MB,
 	FILEGROWTH = 5MB)
 LOG ON
 (
 	NAME = 'Evoucher_DB_LOG',
-	FILENAME = 'C:\00_DATA\04_DE_CODE\cole-data-engineer-bootcamp\LESSON_09\Evoucher_DB.ldf',
+	FILENAME = 'D:\02_DATA\01_cole-data-engineer-bootcamp\LESSON_09\Evoucher_DB.ldf',
 	SIZE = 5MB,
 	MAXSIZE = 50MB,
 	FILEGROWTH = 5MB
@@ -486,6 +486,7 @@ GO
 CREATE OR ALTER PROC [Core].[usp_App_Org_Update]
 	@App_Org_Id NVARCHAR(50),
 	@CreateUser NVARCHAR(50) = NULL,
+	@CreateDate DATETIME = NULL,
 	@UpdateUser NVARCHAR(50) = NULL,
 	@UpdateDate DATETIME = NULL,
 	@IsActive BIT = NULL,
@@ -506,6 +507,7 @@ BEGIN
 	UPDATE [Core].[App_Org]
 	SET
 		[CreateUser] = ISNULL(@CreateUser, [CreateUser]),
+		[CreateDate] = ISNULL(@CreateDate, [CreateDate]),
 		[UpdateUser] = ISNULL(@UpdateUser, [UpdateUser]),
 		[UpdateDate] = ISNULL(@UpdateDate, GETDATE()),
 		[IsActive] = ISNULL(@IsActive, [IsActive]),
@@ -653,6 +655,8 @@ GO
 -- Update
 CREATE OR ALTER PROCEDURE Core.usp_App_User_Update
     @App_User_Id NVARCHAR(50),
+	@CreateUser NVARCHAR(50) = NULL,
+	@CreateDate DATETIME = NULL,
     @UpdateUser NVARCHAR(50) = NULL,
     @UpdateDate DATETIME = NULL,
     @IsActive BIT = NULL,
@@ -675,6 +679,8 @@ BEGIN
 
     UPDATE Core.App_User
     SET
+		CreateUser = ISNULL(@CreateUser, CreateUser),
+		CreateDate = ISNULL(@CreateDate, CreateDate),
         UpdateUser = ISNULL(@UpdateUser, UpdateUser),
         UpdateDate = ISNULL(@UpdateDate, GETDATE()),
         IsActive = ISNULL(@IsActive, IsActive),
@@ -804,6 +810,8 @@ GO
 -- Update
 CREATE OR ALTER PROCEDURE Core.usp_App_Menu_Update
     @App_Menu_Id NVARCHAR(50),
+	@CreateUser NVARCHAR(50) = NULL,
+	@CreateDate DATETIME = NULL,
     @UpdateUser NVARCHAR(50) = NULL,
     @UpdateDate DATETIME = NULL,
     @IsActive BIT = NULL,
@@ -823,6 +831,8 @@ BEGIN
 
     UPDATE Core.App_Menu
     SET
+	    CreateUser = ISNULL(@CreateUser, CreateUser),
+		CreateDate = ISNULL(@CreateDate, CreateDate),
         UpdateUser = ISNULL(@UpdateUser, UpdateUser),
         UpdateDate = ISNULL(@UpdateDate, GETDATE()),
         IsActive = ISNULL(@IsActive, IsActive),
@@ -948,6 +958,8 @@ GO
 -- Update
 CREATE OR ALTER PROCEDURE Core.sp_App_Role_Update
     @App_Role_Id NVARCHAR(50),
+	@CreateUser NVARCHAR(50) = NULL,
+	@CreateDate DATETIME = NULL,
     @UpdateUser NVARCHAR(50) = NULL,
     @UpdateDate DATETIME = NULL,
     @IsActive BIT = NULL,
@@ -964,6 +976,8 @@ BEGIN
 
     UPDATE Core.App_Role
     SET
+	    CreateUser = ISNULL(@CreateUser, CreateUser),
+		CreateDate = ISNULL(@CreateDate, CreateDate),
         UpdateUser = ISNULL(@UpdateUser, UpdateUser),
         UpdateDate = ISNULL(@UpdateDate, GETDATE()),
         IsActive = ISNULL(@IsActive, IsActive),
@@ -1091,6 +1105,8 @@ GO
 -- Update
 CREATE OR ALTER PROCEDURE Core.sp_App_Setting_Update
     @App_Setting_Id NVARCHAR(50),
+	@CreateUser NVARCHAR(50) = NULL,
+	@CreateDate DATETIME = NULL,
     @UpdateUser NVARCHAR(50) = NULL,
     @UpdateDate DATETIME = NULL,
     @IsActive BIT = NULL,
@@ -1107,6 +1123,8 @@ BEGIN
 
     UPDATE Core.App_Setting
     SET
+	    CreateUser = ISNULL(@CreateUser, CreateUser),
+		CreateDate = ISNULL(@CreateDate, CreateDate),
         UpdateUser = ISNULL(@UpdateUser, UpdateUser),
         UpdateDate = ISNULL(@UpdateDate, GETDATE()),
         IsActive = ISNULL(@IsActive, IsActive),
@@ -1242,6 +1260,7 @@ GO
 CREATE OR ALTER PROCEDURE Core.sp_App_File_Update
     @App_File_Id NVARCHAR(50),
 	@CreateUser NVARCHAR(50) = NULL,
+	@CreateDate DATETIME = NULL,
     @UpdateUser NVARCHAR(50) = NULL,
     @UpdateDate DATETIME = NULL,
     @IsActive BIT = NULL,
@@ -1262,6 +1281,8 @@ BEGIN
 
     UPDATE Core.App_File
     SET
+	    CreateUser = ISNULL(@CreateUser, CreateUser),
+		CreateDate = ISNULL(@CreateDate, CreateDate),
         UpdateUser = ISNULL(@UpdateUser, UpdateUser),
         UpdateDate = ISNULL(@UpdateDate, GETDATE()),
         IsActive = ISNULL(@IsActive, IsActive),
@@ -1396,6 +1417,8 @@ GO
 -- Update
 CREATE OR ALTER PROCEDURE Core.sp_App_Dic_Domain_Update
     @App_Dic_Domain_Id NVARCHAR(50),
+	@CreateUser NVARCHAR(50) = NULL,
+	@CreateDate DATETIME = NULL,
     @UpdateUser NVARCHAR(50) = NULL,
     @UpdateDate DATETIME = NULL,
     @IsActive BIT = NULL,
@@ -1414,6 +1437,8 @@ BEGIN
 
     UPDATE Core.App_Dic_Domain
     SET
+	    CreateUser = ISNULL(@CreateUser, CreateUser),
+		CreateDate = ISNULL(@CreateDate, CreateDate),
         UpdateUser = ISNULL(@UpdateUser, UpdateUser),
         UpdateDate = ISNULL(@UpdateDate, GETDATE()),
         IsActive = ISNULL(@IsActive, IsActive),
@@ -1545,6 +1570,8 @@ GO
 -- Update
 CREATE OR ALTER PROCEDURE Core.sp_App_Sequence_Update
     @App_Sequence_Id NVARCHAR(50),
+	@CreateUser NVARCHAR(50) = NULL,
+	@CreateDate DATETIME = NULL,
     @UpdateUser NVARCHAR(50) = NULL,
     @UpdateDate DATETIME = NULL,
     @IsActive BIT = NULL,
@@ -1564,6 +1591,8 @@ BEGIN
 
     UPDATE Core.App_Sequence
     SET
+	    CreateUser = ISNULL(@CreateUser, CreateUser),
+		CreateDate = ISNULL(@CreateDate, CreateDate),
         UpdateUser = ISNULL(@UpdateUser, UpdateUser),
         UpdateDate = ISNULL(@UpdateDate, GETDATE()),
         IsActive = ISNULL(@IsActive, IsActive),
@@ -1688,6 +1717,8 @@ GO
 -- Update
 CREATE OR ALTER PROCEDURE Core.sp_App_Log_Update
     @App_Log_Id NVARCHAR(50),
+	@CreateUser NVARCHAR(50) = NULL,
+	@CreateDate DATETIME = NULL,
     @App_Org_Id NVARCHAR(50) = NULL,
     @TableName NVARCHAR(50) = NULL,
     @RowId NVARCHAR(50) = NULL,
@@ -1703,6 +1734,8 @@ BEGIN
 
     UPDATE Core.App_Log
     SET
+	    CreateUser = ISNULL(@CreateUser, CreateUser),
+		CreateDate = ISNULL(@CreateDate, CreateDate),
         App_Org_Id = ISNULL(@App_Org_Id, App_Org_Id),
         TableName = ISNULL(@TableName, TableName),
         RowId = ISNULL(@RowId, RowId),
